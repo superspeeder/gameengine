@@ -1,0 +1,28 @@
+cmake_minimum_required(VERSION 3.31)
+project(gameengine)
+
+set(CMAKE_CXX_STANDARD 23)
+
+include(FetchContent)
+FetchContent_Declare(glfw GIT_REPOSITORY https://github.com/glfw/glfw.git GIT_TAG 3.4)
+FetchContent_Declare(glm GIT_REPOSITORY https://github.com/g-truc/glm.git GIT_TAG 1.0.1)
+FetchContent_Declare(spdlog GIT_REPOSITORY https://github.com/gabime/spdlog.git GIT_TAG v1.15.2)
+FetchContent_Declare(stb GIT_REPOSITORY https://github.com/nothings/stb.git GIT_TAG master CONFIGURE_COMMAND "" BUILD_COMMAND "")
+FetchContent_Declare(VulkanHeaders GIT_REPOSITORY https://github.com/KhronosGroup/Vulkan-Headers.git GIT_TAG v1.4.313)
+FetchContent_Declare(vkmemalloc GIT_REPOSITORY https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git GIT_TAG v3.2.1)
+
+set(SPDLOG_USE_STD_FORMAT ON)
+
+FetchContent_MakeAvailable(glfw glm spdlog stb VulkanHeaders vkmemalloc)
+
+add_executable(gameengine src/main.cpp
+        src/engine/window.cpp
+        src/engine/window.hpp
+        src/app/engine_app.cpp
+        src/app/engine_app.hpp
+        src/engine/render_system.cpp
+        src/engine/render_system.hpp)
+target_include_directories(gameengine PRIVATE src/ ${stb_SOURCE_DIR})
+target_link_libraries(gameengine PRIVATE glfw glm::glm spdlog::spdlog Vulkan::Headers GPUOpen::VulkanMemoryAllocator)
+target_compile_definitions(gameengine PRIVATE GLFW_INCLUDE_NONE GLFW_INCLUDE_VULKAN GLM_ENABLE_EXPERIMENTAL VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1)
+
