@@ -4,12 +4,22 @@
 
 #include "window.hpp"
 
+#include <iostream>
+
 namespace engine {
-    Window::Window() {
+    Window::Window(const std::shared_ptr<RenderSystem> &render_system) : m_RenderSystem(render_system) {
+        glfwDefaultWindowHints();
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         m_Window = glfwCreateWindow(640, 480, "Hello World!", nullptr, nullptr);
+
+        VkSurfaceKHR surf;
+        glfwCreateWindowSurface(*m_RenderSystem->instance(), m_Window, nullptr, &surf);
+
+        m_Surface = {m_RenderSystem->instance(), surf};
     }
 
     Window::~Window() {
+        m_Surface.clear();
         glfwDestroyWindow(m_Window);
     }
 
@@ -39,5 +49,23 @@ namespace engine {
 
     void Window::close() const {
         glfwSetWindowShouldClose(m_Window, true);
+    }
+
+    vk::SurfaceCapabilitiesKHR Window::getSurfaceCapabilities() const {
+        return m_RenderSystem->physicalDevice().getSurfaceCapabilitiesKHR(m_Surface);
+    }
+
+    std::vector<vk::SurfaceFormatKHR> Window::getSurfaceFormats() const {
+        return m_RenderSystem->physicalDevice().getSurfaceFormatsKHR(m_Surface);
+    }
+
+    std::vector<vk::PresentModeKHR> Window::getPresentModes() const {
+        return m_RenderSystem->physicalDevice().getSurfacePresentModesKHR(m_Surface);
+    }
+
+    vk::Extent2D Window::getSurfaceCompatibleExtent() const {
+        auto size = getSize();
+        auto caps = getSurfaceCapabilities();
+        return {std::clamp(size.x, caps.minImageExtent.width, caps.maxImageExtent.width), std::clamp(size.y, caps.minImageExtent.height, caps.maxImageExtent.height)};
     }
 } // namespace engine

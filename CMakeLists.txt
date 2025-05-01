@@ -21,7 +21,9 @@ add_executable(gameengine src/main.cpp
         src/app/engine_app.cpp
         src/app/engine_app.hpp
         src/engine/render_system.cpp
-        src/engine/render_system.hpp)
+        src/engine/render_system.hpp
+        src/engine/swapchain.cpp
+        src/engine/swapchain.hpp)
 target_include_directories(gameengine PRIVATE src/ ${stb_SOURCE_DIR})
 target_link_libraries(gameengine PRIVATE glfw glm::glm spdlog::spdlog Vulkan::Headers GPUOpen::VulkanMemoryAllocator)
 target_compile_definitions(gameengine PRIVATE GLFW_INCLUDE_NONE GLFW_INCLUDE_VULKAN GLM_ENABLE_EXPERIMENTAL VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1)

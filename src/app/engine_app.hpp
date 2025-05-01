@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "engine/swapchain.hpp"
 #include "engine/window.hpp"
 #include <memory>
 
@@ -15,15 +16,17 @@ namespace app {
     };
 
     class EngineApp {
-    public:
+      public:
         EngineApp();
 
         void run();
 
-    private:
+      private:
         glfw_lib _glfw{};
 
-        std::shared_ptr<engine::Window> m_Window;
+        std::shared_ptr<engine::Window>       m_Window;
+        std::shared_ptr<engine::RenderSystem> m_RenderSystem;
+        std::shared_ptr<engine::Swapchain>    m_Swapchain;
     };
 
 } // namespace app

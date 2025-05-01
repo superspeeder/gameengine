@@ -14,7 +14,9 @@ namespace app {
     }
 
     EngineApp::EngineApp() {
-        m_Window = std::make_shared<engine::Window>();
+        m_RenderSystem = std::make_shared<engine::RenderSystem>();
+        m_Window       = std::make_shared<engine::Window>(m_RenderSystem);
+        m_Swapchain    = std::make_shared<engine::Swapchain>(m_RenderSystem, m_Window);
     }
 
     void EngineApp::run() {
@@ -22,4 +24,4 @@ namespace app {
             glfwPollEvents();
         }
     }
-} // app
+} // namespace app
