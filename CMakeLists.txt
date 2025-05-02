@@ -30,6 +30,8 @@ add_executable(gameengine src/main.cpp
         src/engine/utils.hpp
         src/engine/render/shader_object.cpp
         src/engine/render/shader_object.hpp
+        src/engine/render/vertex_buffer.cpp
+        src/engine/render/vertex_buffer.hpp
 )
 target_include_directories(gameengine PRIVATE src/ ${stb_SOURCE_DIR})
 target_link_libraries(gameengine PRIVATE glfw glm::glm spdlog::spdlog Vulkan::Headers GPUOpen::VulkanMemoryAllocator EnTT::EnTT)

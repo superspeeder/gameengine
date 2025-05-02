@@ -30,6 +30,22 @@ namespace engine {
         return extensions;
     }
 
+    void *Allocation::map() const {
+        void *m;
+        vmaMapMemory(allocator, allocation, &m);
+        return m;
+    }
+
+    void Allocation::unmap() const {
+        vmaUnmapMemory(allocator, allocation);
+    }
+
+    void RawBuffer::write(const std::size_t size, const void *data) const {
+        void *dst = allocation.map();
+        std::memcpy(dst, data, size);
+        allocation.unmap();
+    }
+
     RenderDevice::RenderDevice() {
         VmaAllocatorCreateFlags allocatorFlags =
             VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT | VMA_ALLOCATOR_CREATE_KHR_MAINTENANCE4_BIT | VMA_ALLOCATOR_CREATE_KHR_MAINTENANCE5_BIT;
@@ -225,8 +241,8 @@ namespace engine {
         return {{std::move(image), std::move(allocation)}, ai};
     }
 
-    std::pair<RawBuffer, VmaAllocationInfo> RenderDevice::createBuffer(const vk::BufferCreateInfo    &buffer_create_info,
-                                                                       const VmaAllocationCreateInfo &allocation_create_info) const {
+    std::pair<RawBuffer, VmaAllocationInfo>
+    RenderDevice::createBuffer(const vk::BufferCreateInfo &buffer_create_info, const VmaAllocationCreateInfo &allocation_create_info) const {
         VmaAllocation            alloc;
         VmaAllocationInfo        ai;
         VkBuffer                 buf;
@@ -241,8 +257,10 @@ namespace engine {
         return {{std::move(buffer), std::move(allocation)}, ai};
     }
 
-    std::pair<RawBuffer, VmaAllocationInfo> RenderDevice::createBuffer(const vk::DeviceSize size, const vk::BufferUsageFlags usage, const MemoryUsage &memory_usage,
-                                                                       VmaAllocationCreateFlags allocationFlags, const std::vector<uint32_t> &queue_families) const {
+    std::pair<RawBuffer, VmaAllocationInfo> RenderDevice::createBuffer(
+        const vk::DeviceSize size, const vk::BufferUsageFlags usage, const MemoryUsage &memory_usage, VmaAllocationCreateFlags allocationFlags,
+        const std::vector<uint32_t> &queue_families
+    ) const {
         vk::BufferCreateInfo bci{};
         bci.size  = size;
         bci.usage = usage;
@@ -261,9 +279,10 @@ namespace engine {
         return createBuffer(bci, aci);
     }
 
-    std::pair<RawImage, VmaAllocationInfo> RenderDevice::createImage(const vk::Extent3D size, const vk::Format format, const vk::ImageUsageFlags usage, const bool preinitialized,
-                                                                     const bool linear, const MemoryUsage &memory_usage, const VmaAllocationCreateFlags allocationFlags,
-                                                                     const std::vector<uint32_t> &queue_families) const {
+    std::pair<RawImage, VmaAllocationInfo> RenderDevice::createImage(
+        const vk::Extent3D size, const vk::Format format, const vk::ImageUsageFlags usage, const bool preinitialized, const bool linear, const MemoryUsage &memory_usage,
+        const VmaAllocationCreateFlags allocationFlags, const std::vector<uint32_t> &queue_families
+    ) const {
         vk::ImageCreateInfo ici{};
         ici.format        = format;
         ici.extent        = size;
@@ -298,9 +317,11 @@ namespace engine {
         return vk::raii::CommandBuffers(m_Device, {*m_TransferCommandPool, vk::CommandBufferLevel::ePrimary, count});
     }
 
-    void imageTransition(const vk::raii::CommandBuffer &cmd, const vk::Image image, const vk::ImageSubresourceRange &isr,
-                         std::tuple<vk::ImageLayout, vk::PipelineStageFlagBits2, vk::AccessFlags2, uint32_t> sourceState,
-                         std::tuple<vk::ImageLayout, vk::PipelineStageFlagBits2, vk::AccessFlags2, uint32_t> destinationState) {
+    void imageTransition(
+        const vk::raii::CommandBuffer &cmd, const vk::Image image, const vk::ImageSubresourceRange &isr,
+        std::tuple<vk::ImageLayout, vk::PipelineStageFlagBits2, vk::AccessFlags2, uint32_t> sourceState,
+        std::tuple<vk::ImageLayout, vk::PipelineStageFlagBits2, vk::AccessFlags2, uint32_t> destinationState
+    ) {
         vk::ImageMemoryBarrier2 imb{};
         imb.image                                        = image;
         imb.subresourceRange                             = isr;

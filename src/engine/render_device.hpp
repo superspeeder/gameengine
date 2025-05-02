@@ -17,12 +17,20 @@ namespace engine {
     class Allocation {
       public:
         inline Allocation(const VmaAllocation allocation, const VmaAllocator allocator) : allocation(allocation), allocator(allocator) {}
-        inline ~Allocation() { vmaFreeMemory(allocator, allocation); }
+        inline ~Allocation() {
+            if (allocation)
+                vmaFreeMemory(allocator, allocation);
+        }
+
+        inline Allocation(std::nullptr_t) : allocation(nullptr), allocator(nullptr) {}
 
         Allocation(const Allocation &other)                = delete;
         Allocation(Allocation &&other) noexcept            = default;
         Allocation &operator=(const Allocation &other)     = delete;
         Allocation &operator=(Allocation &&other) noexcept = default;
+
+        void* map() const;
+        void unmap() const;
 
       private:
         VmaAllocation allocation;
@@ -37,6 +45,11 @@ namespace engine {
     struct RawBuffer {
         vk::raii::Buffer buffer;
         Allocation       allocation;
+
+        inline RawBuffer(vk::raii::Buffer buffer, Allocation allocation) : buffer(std::move(buffer)), allocation(std::move(allocation)) {}
+        inline RawBuffer(std::nullptr_t) : buffer(nullptr), allocation(nullptr) {}
+
+        void write(std::size_t size, const void* data) const;
     };
 
     struct Allocator {
@@ -92,11 +105,14 @@ namespace engine {
         std::pair<RawImage, VmaAllocationInfo>  createImage(const vk::ImageCreateInfo &image_create_info, const VmaAllocationCreateInfo &allocation_create_info) const;
         std::pair<RawBuffer, VmaAllocationInfo> createBuffer(const vk::BufferCreateInfo &buffer_create_info, const VmaAllocationCreateInfo &allocation_create_info) const;
 
-        std::pair<RawBuffer, VmaAllocationInfo> createBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, const MemoryUsage &memory_usage,
-                                                             VmaAllocationCreateFlags allocationFlags, const std::vector<uint32_t> &queue_families = {}) const;
-        std::pair<RawImage, VmaAllocationInfo>  createImage(vk::Extent3D size, vk::Format format, vk::ImageUsageFlags usage, bool preinitialized, bool linear,
-                                                            const MemoryUsage &memory_usage, VmaAllocationCreateFlags allocationFlags,
-                                                            const std::vector<uint32_t> &queue_families = {}) const;
+        std::pair<RawBuffer, VmaAllocationInfo> createBuffer(
+            vk::DeviceSize size, vk::BufferUsageFlags usage, const MemoryUsage &memory_usage, VmaAllocationCreateFlags allocationFlags,
+            const std::vector<uint32_t> &queue_families = {}
+        ) const;
+        std::pair<RawImage, VmaAllocationInfo> createImage(
+            vk::Extent3D size, vk::Format format, vk::ImageUsageFlags usage, bool preinitialized, bool linear, const MemoryUsage &memory_usage,
+            VmaAllocationCreateFlags allocationFlags, const std::vector<uint32_t> &queue_families = {}
+        ) const;
 
         inline void waitFence(const vk::raii::Fence &fence, const uint64_t timeout = UINT64_MAX) const { [[maybe_unused]] auto _ = m_Device.waitForFences(*fence, true, timeout); };
         inline void resetFence(const vk::raii::Fence &fence) const { m_Device.resetFences(*fence); };
@@ -127,6 +143,9 @@ namespace engine {
     template <>
     [[nodiscard]] vk::raii::CommandBuffers RenderDevice::allocateCommandBuffers<QueueType::TRANSFER>(uint32_t count) const;
 
-    void imageTransition(const vk::raii::CommandBuffer &cmd, vk::Image image, const vk::ImageSubresourceRange &isr, std::tuple<vk::ImageLayout, vk::PipelineStageFlagBits2, vk::AccessFlags2, uint32_t> sourceState,
-                         std::tuple<vk::ImageLayout, vk::PipelineStageFlagBits2, vk::AccessFlags2, uint32_t> destinationState);
+    void imageTransition(
+        const vk::raii::CommandBuffer &cmd, vk::Image image, const vk::ImageSubresourceRange &isr,
+        std::tuple<vk::ImageLayout, vk::PipelineStageFlagBits2, vk::AccessFlags2, uint32_t> sourceState,
+        std::tuple<vk::ImageLayout, vk::PipelineStageFlagBits2, vk::AccessFlags2, uint32_t> destinationState
+    );
 } // namespace engine

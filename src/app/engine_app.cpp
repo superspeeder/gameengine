@@ -37,6 +37,8 @@ namespace app {
                 },
             }
         );
+
+        m_VertexBuffer = std::make_shared<engine::VertexBuffer>(engine::VertexBufferStorage::Static)
     }
 
     EngineApp::~EngineApp() {
