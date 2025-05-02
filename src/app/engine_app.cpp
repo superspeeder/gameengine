@@ -4,6 +4,8 @@
 
 #include "engine_app.hpp"
 
+#include <glm/glm.hpp>
+
 namespace app {
     glfw_lib::glfw_lib() {
         glfwInit();
@@ -12,6 +14,11 @@ namespace app {
     glfw_lib::~glfw_lib() {
         glfwTerminate();
     }
+
+    struct Vertex {
+        glm::vec2 position;
+        glm::vec4 color;
+    };
 
     EngineApp::EngineApp() {
         m_RenderDevice   = std::make_shared<engine::RenderDevice>();
@@ -38,7 +45,15 @@ namespace app {
             }
         );
 
-        m_VertexBuffer = std::make_shared<engine::VertexBuffer>(engine::VertexBufferStorage::Static)
+        std::vector<Vertex> vertices = {
+            {{-0.5f, 0.5f}, {1.0f, 0.0f, 0.0f, 1.0f}},
+            {{0.0f, -0.5f}, {0.0f, 1.0f, 0.0f, 1.0f}},
+            {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f, 1.0f}},
+        };
+
+        m_VertexBuffer = engine::VertexBuffer::create(m_RenderDevice, engine::VertexBufferStorage::Static, vertices, {vk::VertexInputBindingDescription2EXT(0, sizeof(Vertex), vk::VertexInputRate::eVertex), {
+                vk::VertexInputAttributeDescription2EXT(0, 0, vk::Format::eR32G32Sfloat, offsetof(Vertex, position)),
+                vk::VertexInputAttributeDescription2EXT(1, 0, vk::Format::eR32G32B32A32Sfloat, offsetof(Vertex, color))}});
     }
 
     EngineApp::~EngineApp() {

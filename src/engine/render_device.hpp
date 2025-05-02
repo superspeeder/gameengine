@@ -4,9 +4,7 @@
 
 #pragma once
 
-#include "spdlog/fmt/bundled/format.h"
-
-
+#include <functional>
 #include <vulkan/vulkan_raii.hpp>
 
 #include <vk_mem_alloc.h>
@@ -29,8 +27,8 @@ namespace engine {
         Allocation &operator=(const Allocation &other)     = delete;
         Allocation &operator=(Allocation &&other) noexcept = default;
 
-        void* map() const;
-        void unmap() const;
+        void *map() const;
+        void  unmap() const;
 
       private:
         VmaAllocation allocation;
@@ -49,7 +47,13 @@ namespace engine {
         inline RawBuffer(vk::raii::Buffer buffer, Allocation allocation) : buffer(std::move(buffer)), allocation(std::move(allocation)) {}
         inline RawBuffer(std::nullptr_t) : buffer(nullptr), allocation(nullptr) {}
 
-        void write(std::size_t size, const void* data) const;
+        RawBuffer(RawBuffer&&) = default;
+        RawBuffer& operator=(RawBuffer&&) = default;
+
+        RawBuffer(const RawBuffer&) = delete;
+        RawBuffer& operator=(const RawBuffer&) = delete;
+
+        void write(std::size_t size, const void *data) const;
     };
 
     struct Allocator {
@@ -114,8 +118,29 @@ namespace engine {
             VmaAllocationCreateFlags allocationFlags, const std::vector<uint32_t> &queue_families = {}
         ) const;
 
-        inline void waitFence(const vk::raii::Fence &fence, const uint64_t timeout = UINT64_MAX) const { [[maybe_unused]] auto _ = m_Device.waitForFences(*fence, true, timeout); };
+        inline void waitFence(const vk::raii::Fence &fence, const uint64_t timeout = UINT64_MAX) const { [[maybe_unused]] auto _ = m_Device.waitForFences(*fence, true, timeout); }
         inline void resetFence(const vk::raii::Fence &fence) const { m_Device.resetFences(*fence); };
+
+        void copyBufferToBuffer(const RawBuffer &srcBuffer, const RawBuffer &dstBuffer, vk::DeviceSize srcOffset, vk::DeviceSize dstOffset, vk::DeviceSize size) const;
+
+        template<QueueType QT>
+        inline void singleTimeCommands(const std::function<void(const vk::raii::CommandBuffer& command_buffer)> &f, const vk::raii::Fence& fence) const {
+            static_assert((QT == QueueType::GRAPHICS || QT == QueueType::TRANSFER) && "Queue Type is invalid (must be graphics or transfer)");
+
+            auto cmd = std::move(allocateCommandBuffers<QT>(1)[0]);
+            cmd.begin(vk::CommandBufferBeginInfo(vk::CommandBufferUsageFlagBits::eOneTimeSubmit));
+            f(cmd);
+            cmd.end();
+
+            vk::SubmitInfo submit_info = {};
+            submit_info.setCommandBuffers(*cmd);
+
+            if constexpr (QT == QueueType::GRAPHICS) {
+                m_GraphicsQueue.submit(submit_info, fence);
+            } else if constexpr(QT == QueueType::TRANSFER) {
+                m_TransferQueue.submit(submit_info, fence);
+            }
+        }
 
       private:
         vk::raii::Context        m_Context;

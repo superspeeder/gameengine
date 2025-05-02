@@ -238,7 +238,7 @@ namespace engine {
         vk::raii::Image image{m_Device, img};
         Allocation      allocation{alloc, m_Allocator};
 
-        return {{std::move(image), std::move(allocation)}, ai};
+        return std::make_pair(RawImage(std::move(image), std::move(allocation)), ai);
     }
 
     std::pair<RawBuffer, VmaAllocationInfo>
@@ -254,7 +254,9 @@ namespace engine {
         vk::raii::Buffer buffer{m_Device, buf};
         Allocation       allocation{alloc, m_Allocator};
 
-        return {{std::move(buffer), std::move(allocation)}, ai};
+        auto pair = std::make_pair(RawBuffer(std::move(buffer), std::move(allocation)), ai);
+
+        return std::move(pair);
     }
 
     std::pair<RawBuffer, VmaAllocationInfo> RenderDevice::createBuffer(
@@ -276,7 +278,7 @@ namespace engine {
         aci.flags = allocationFlags;
         aci.usage = static_cast<VmaMemoryUsage>(memory_usage);
 
-        return createBuffer(bci, aci);
+        return std::move(createBuffer(bci, aci));
     }
 
     std::pair<RawImage, VmaAllocationInfo> RenderDevice::createImage(
@@ -305,6 +307,14 @@ namespace engine {
         aci.usage = static_cast<VmaMemoryUsage>(memory_usage);
 
         return createImage(ici, aci);
+    }
+
+    void RenderDevice::copyBufferToBuffer(const RawBuffer &srcBuffer, const RawBuffer &dstBuffer, const vk::DeviceSize srcOffset, const vk::DeviceSize dstOffset, vk::DeviceSize size) const {
+        auto fence = createFence();
+        singleTimeCommands<QueueType::TRANSFER>([&](const vk::raii::CommandBuffer &cmd) {
+            cmd.copyBuffer(*srcBuffer.buffer, *dstBuffer.buffer, vk::BufferCopy(srcOffset, dstOffset, size));
+        }, fence);
+        waitFence(fence);
     }
 
     template <>

@@ -169,3 +169,7 @@ fabric.properties
 /.vscode/
 
 *.spv
+
+compile_commands.json
+/gameengine
+/.cache/

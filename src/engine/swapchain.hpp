@@ -27,7 +27,7 @@ namespace engine {
         void reconfigure();
         void update();
 
-        [[nodiscard]] inline SwapchainFrameInfo getCurrentFrameInfo() const { return m_CurrentFrameInfo; }
+        [[nodiscard]] inline SwapchainFrameInfo getCurrentFrameInfo() const { return m_CurrentFrameInfo; };
 
         std::optional<SwapchainFrameInfo> acquireNextFrame(const vk::raii::Semaphore &availableSignal);
         void                              present(const vk::raii::Semaphore &renderedSignal);

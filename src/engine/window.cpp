@@ -10,6 +10,7 @@ namespace engine {
     Window::Window(const std::shared_ptr<RenderDevice> &render_system) : m_RenderDevice(render_system) {
         glfwDefaultWindowHints();
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+        glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
         m_Window = glfwCreateWindow(640, 480, "Hello World!", nullptr, nullptr);
 
         VkSurfaceKHR surf;
