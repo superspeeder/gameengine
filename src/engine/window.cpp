@@ -7,15 +7,15 @@
 #include <iostream>
 
 namespace engine {
-    Window::Window(const std::shared_ptr<RenderSystem> &render_system) : m_RenderSystem(render_system) {
+    Window::Window(const std::shared_ptr<RenderDevice> &render_system) : m_RenderDevice(render_system) {
         glfwDefaultWindowHints();
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         m_Window = glfwCreateWindow(640, 480, "Hello World!", nullptr, nullptr);
 
         VkSurfaceKHR surf;
-        glfwCreateWindowSurface(*m_RenderSystem->instance(), m_Window, nullptr, &surf);
+        glfwCreateWindowSurface(*m_RenderDevice->instance(), m_Window, nullptr, &surf);
 
-        m_Surface = {m_RenderSystem->instance(), surf};
+        m_Surface = {m_RenderDevice->instance(), surf};
     }
 
     Window::~Window() {
@@ -52,15 +52,15 @@ namespace engine {
     }
 
     vk::SurfaceCapabilitiesKHR Window::getSurfaceCapabilities() const {
-        return m_RenderSystem->physicalDevice().getSurfaceCapabilitiesKHR(m_Surface);
+        return m_RenderDevice->physicalDevice().getSurfaceCapabilitiesKHR(m_Surface);
     }
 
     std::vector<vk::SurfaceFormatKHR> Window::getSurfaceFormats() const {
-        return m_RenderSystem->physicalDevice().getSurfaceFormatsKHR(m_Surface);
+        return m_RenderDevice->physicalDevice().getSurfaceFormatsKHR(m_Surface);
     }
 
     std::vector<vk::PresentModeKHR> Window::getPresentModes() const {
-        return m_RenderSystem->physicalDevice().getSurfacePresentModesKHR(m_Surface);
+        return m_RenderDevice->physicalDevice().getSurfacePresentModesKHR(m_Surface);
     }
 
     vk::Extent2D Window::getSurfaceCompatibleExtent() const {

@@ -4,8 +4,11 @@
 
 #pragma once
 
+#include "engine/render/shader_object.hpp"
+#include "engine/render/window_renderer.hpp"
 #include "engine/swapchain.hpp"
 #include "engine/window.hpp"
+
 #include <memory>
 
 namespace app {
@@ -18,15 +21,18 @@ namespace app {
     class EngineApp {
       public:
         EngineApp();
+        ~EngineApp();
 
         void run();
 
       private:
         glfw_lib _glfw{};
 
-        std::shared_ptr<engine::Window>       m_Window;
-        std::shared_ptr<engine::RenderSystem> m_RenderSystem;
-        std::shared_ptr<engine::Swapchain>    m_Swapchain;
+        std::shared_ptr<engine::Window>         m_Window;
+        std::shared_ptr<engine::RenderDevice>   m_RenderDevice;
+        std::shared_ptr<engine::Swapchain>      m_Swapchain;
+        std::shared_ptr<engine::WindowRenderer> m_WindowRenderer;
+        std::shared_ptr<engine::LinkedShader>   m_Shader;
     };
 
 } // namespace app

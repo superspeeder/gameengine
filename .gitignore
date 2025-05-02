@@ -167,3 +167,5 @@ fabric.properties
 
 /build/
 /.vscode/
+
+*.spv

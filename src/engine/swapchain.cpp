@@ -7,8 +7,16 @@
 #include <iostream>
 
 namespace engine {
-    Swapchain::Swapchain(const std::shared_ptr<RenderSystem> &render_system, const std::shared_ptr<Window> &window)
-        : m_Window(window), m_RenderSystem(render_system), m_Swapchain(nullptr) {
+    void SwapchainFrameInfo::setViewportAndScissor(const vk::raii::CommandBuffer &cmd) const {
+        const vk::Viewport viewport = {0.0f, 0.0f, static_cast<float>(extent.width), static_cast<float>(extent.height), 0.0f, 1.0f};
+        const vk::Rect2D   scissor  = {{0, 0}, extent};
+
+        cmd.setViewportWithCount(viewport);
+        cmd.setScissorWithCount(scissor);
+    }
+
+    Swapchain::Swapchain(const std::shared_ptr<RenderDevice> &render_system, const std::shared_ptr<Window> &window)
+        : m_Window(window), m_RenderDevice(render_system), m_Swapchain(nullptr) {
         reconfigure();
     }
 
@@ -29,14 +37,14 @@ namespace engine {
     }
 
     void Swapchain::reconfigure() {
-        m_RenderSystem->waitDeviceIdle();
+        m_RenderDevice->waitDeviceIdle();
 
         vk::SwapchainCreateInfoKHR createInfo{};
         if (m_Swapchain != nullptr) {
             createInfo.oldSwapchain = m_Swapchain;
         }
 
-        auto formats    = m_Window->getSurfaceFormats();
+        const auto formats    = m_Window->getSurfaceFormats();
         m_SurfaceFormat = formats.front();
         for (const auto &format : formats) {
             if (format.format == vk::Format::eB8G8R8A8Srgb && format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear) {
@@ -45,7 +53,7 @@ namespace engine {
             }
         }
 
-        auto presentModes = m_Window->getPresentModes();
+        const auto presentModes = m_Window->getPresentModes();
         m_PresentMode     = vk::PresentModeKHR::eFifo;
         for (const auto &mode : presentModes) {
             if (mode == vk::PresentModeKHR::eMailbox) {
@@ -54,7 +62,7 @@ namespace engine {
             }
         }
 
-        auto caps = m_Window->getSurfaceCapabilities();
+        const auto caps = m_Window->getSurfaceCapabilities();
 
         m_Extent = m_Window->getSurfaceCompatibleExtent();
 
@@ -72,17 +80,58 @@ namespace engine {
         createInfo.imageSharingMode = vk::SharingMode::eExclusive;
 
 
-        vk::raii::SwapchainKHR swc{m_RenderSystem->device(), createInfo};
+        vk::raii::SwapchainKHR swc{m_RenderDevice->device(), createInfo};
         std::swap(m_Swapchain, swc);
 
         m_Images = m_Swapchain.getImages();
         std::cout << "Swapchain created (" << m_Images.size() << " images)" << std::endl;
+
+        m_OnSwapchainReconfigure.publish(m_Images, m_SurfaceFormat, m_Extent);
     }
 
-    SwapchainFrameInfo Swapchain::acquireNextFrame(const vk::raii::Semaphore &semaphore) {
-        auto r = m_Swapchain.acquireNextImage(UINT64_MAX, semaphore);
-        // TODO: process result, find some way to return the error
+    void Swapchain::update() {
+        if (m_RequiresReconfigure) {
+            reconfigure();
+            m_RequiresReconfigure = false;
+        }
+    }
 
-        return m_CurrentFrameInfo;
+    std::optional<SwapchainFrameInfo> Swapchain::acquireNextFrame(const vk::raii::Semaphore &semaphore) {
+        try {
+            auto [result, index] = m_Swapchain.acquireNextImage(UINT64_MAX, semaphore);
+            switch (result) {
+            case vk::Result::eSuccess:
+                break;
+            case vk::Result::eSuboptimalKHR:
+                m_RequiresReconfigure = true;
+                break;
+            case vk::Result::eErrorOutOfDateKHR:
+                m_RequiresReconfigure = true;
+                return std::nullopt;
+            default:
+                vk::detail::throwResultException(result, "vkAcquireNextImageKHR");
+            }
+
+            m_CurrentFrameInfo = {.image = m_Images[index], .imageIndex = index, .surfaceFormat = m_SurfaceFormat, .extent = m_Extent};
+
+            return m_CurrentFrameInfo;
+        } catch (vk::OutOfDateKHRError& ignored) {
+            m_RequiresReconfigure = true;
+            return std::nullopt;
+        }
+    }
+
+    void Swapchain::present(const vk::raii::Semaphore &renderedSignal) {
+        vk::PresentInfoKHR pi{};
+        pi.setSwapchains(*m_Swapchain);
+        pi.setImageIndices(m_CurrentFrameInfo.imageIndex);
+        pi.setWaitSemaphores(*renderedSignal);
+        try {
+            if (const auto res = m_RenderDevice->presentQueue().presentKHR(pi); res == vk::Result::eErrorOutOfDateKHR || res == vk::Result::eSuboptimalKHR) {
+                m_RequiresReconfigure = true;
+            }
+        } catch (vk::OutOfDateKHRError& ignored) {
+            m_RequiresReconfigure = true;
+        }
     }
 } // namespace engine

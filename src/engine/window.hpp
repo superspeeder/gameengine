@@ -5,7 +5,7 @@
 #pragma once
 
 #include "glm/vec2.hpp"
-#include "render_system.hpp"
+#include "render_device.hpp"
 
 
 #include <GLFW/glfw3.h>
@@ -14,7 +14,7 @@ namespace engine {
 
     class Window {
       public:
-        explicit Window(const std::shared_ptr<RenderSystem> &renderSystem);
+        explicit Window(const std::shared_ptr<RenderDevice> &RenderDevice);
         ~Window();
 
         [[nodiscard]] bool       shouldClose() const;
@@ -33,7 +33,7 @@ namespace engine {
 
       private:
         GLFWwindow                   *m_Window;
-        std::shared_ptr<RenderSystem> m_RenderSystem;
+        std::shared_ptr<RenderDevice> m_RenderDevice;
         vk::raii::SurfaceKHR          m_Surface{nullptr};
     };
 
