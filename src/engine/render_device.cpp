@@ -41,9 +41,9 @@ namespace engine {
     }
 
     void RawBuffer::write(const std::size_t size, const void *data) const {
-        void *dst = allocation.map();
+        void *dst = allocation->map();
         std::memcpy(dst, data, size);
-        allocation.unmap();
+        allocation->unmap();
     }
 
     RenderDevice::RenderDevice() {
@@ -234,11 +234,7 @@ namespace engine {
 
         const auto result = static_cast<vk::Result>(vmaCreateImage(m_Allocator, &ici, &allocation_create_info, &img, &alloc, &ai));
         vk::detail::resultCheck(result, "vmaCreateImage");
-
-        vk::raii::Image image{m_Device, img};
-        Allocation      allocation{alloc, m_Allocator};
-
-        return std::make_pair(RawImage(std::move(image), std::move(allocation)), ai);
+        return std::pair(RawImage(vk::raii::Image(m_Device, img), std::make_unique<Allocation>(alloc, m_Allocator)), ai);
     }
 
     std::pair<RawBuffer, VmaAllocationInfo>
@@ -251,12 +247,7 @@ namespace engine {
         const auto result = static_cast<vk::Result>(vmaCreateBuffer(m_Allocator, &bci, &allocation_create_info, &buf, &alloc, &ai));
         vk::detail::resultCheck(result, "vmaCreateBuffer");
 
-        vk::raii::Buffer buffer{m_Device, buf};
-        Allocation       allocation{alloc, m_Allocator};
-
-        auto pair = std::make_pair(RawBuffer(std::move(buffer), std::move(allocation)), ai);
-
-        return std::move(pair);
+        return std::pair(RawBuffer(vk::raii::Buffer(m_Device, buf), std::make_unique<Allocation>(alloc, m_Allocator)), ai);
     }
 
     std::pair<RawBuffer, VmaAllocationInfo> RenderDevice::createBuffer(

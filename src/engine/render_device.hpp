@@ -14,7 +14,7 @@ namespace engine {
 
     class Allocation {
       public:
-        inline Allocation(const VmaAllocation allocation, const VmaAllocator allocator) : allocation(allocation), allocator(allocator) {}
+        inline Allocation(const VmaAllocation allocation_, const VmaAllocator allocator_) : allocation(allocation_), allocator(allocator_) {}
         inline ~Allocation() {
             if (allocation)
                 vmaFreeMemory(allocator, allocation);
@@ -36,22 +36,31 @@ namespace engine {
     };
 
     struct RawImage {
-        vk::raii::Image image;
-        Allocation      allocation;
+        vk::raii::Image             image;
+        std::unique_ptr<Allocation> allocation;
+
+        inline RawImage(vk::raii::Image image, std::unique_ptr<Allocation> allocation) : image(std::move(image)), allocation(std::move(allocation)) {}
+        inline RawImage(std::nullptr_t) : image(nullptr), allocation(nullptr) {}
+
+        RawImage(RawImage &&)            = default;
+        RawImage &operator=(RawImage &&) = default;
+
+        RawImage(const RawImage &)            = delete;
+        RawImage &operator=(const RawImage &) = delete;
     };
 
     struct RawBuffer {
-        vk::raii::Buffer buffer;
-        Allocation       allocation;
+        vk::raii::Buffer            buffer;
+        std::unique_ptr<Allocation> allocation;
 
-        inline RawBuffer(vk::raii::Buffer buffer, Allocation allocation) : buffer(std::move(buffer)), allocation(std::move(allocation)) {}
+        inline RawBuffer(vk::raii::Buffer buffer, std::unique_ptr<Allocation> allocation) : buffer(std::move(buffer)), allocation(std::move(allocation)) {}
         inline RawBuffer(std::nullptr_t) : buffer(nullptr), allocation(nullptr) {}
 
-        RawBuffer(RawBuffer&&) = default;
-        RawBuffer& operator=(RawBuffer&&) = default;
+        RawBuffer(RawBuffer &&)            = default;
+        RawBuffer &operator=(RawBuffer &&) = default;
 
-        RawBuffer(const RawBuffer&) = delete;
-        RawBuffer& operator=(const RawBuffer&) = delete;
+        RawBuffer(const RawBuffer &)            = delete;
+        RawBuffer &operator=(const RawBuffer &) = delete;
 
         void write(std::size_t size, const void *data) const;
     };
@@ -123,8 +132,8 @@ namespace engine {
 
         void copyBufferToBuffer(const RawBuffer &srcBuffer, const RawBuffer &dstBuffer, vk::DeviceSize srcOffset, vk::DeviceSize dstOffset, vk::DeviceSize size) const;
 
-        template<QueueType QT>
-        inline void singleTimeCommands(const std::function<void(const vk::raii::CommandBuffer& command_buffer)> &f, const vk::raii::Fence& fence) const {
+        template <QueueType QT>
+        inline void singleTimeCommands(const std::function<void(const vk::raii::CommandBuffer &command_buffer)> &f, const vk::raii::Fence &fence) const {
             static_assert((QT == QueueType::GRAPHICS || QT == QueueType::TRANSFER) && "Queue Type is invalid (must be graphics or transfer)");
 
             auto cmd = std::move(allocateCommandBuffers<QT>(1)[0]);
@@ -137,7 +146,7 @@ namespace engine {
 
             if constexpr (QT == QueueType::GRAPHICS) {
                 m_GraphicsQueue.submit(submit_info, fence);
-            } else if constexpr(QT == QueueType::TRANSFER) {
+            } else if constexpr (QT == QueueType::TRANSFER) {
                 m_TransferQueue.submit(submit_info, fence);
             }
         }
