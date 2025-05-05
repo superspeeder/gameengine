@@ -33,11 +33,11 @@ namespace engine {
             if (storage == VertexBufferStorage::Dynamic) {
                 m_Buffer = createHostBuffer(device, std::forward<R &&>(range), false);
             } else {
-                auto tempBuffer = createHostBuffer(device, std::forward<R &&>(range), true);
-
                 using range_value_t                     = std::ranges::range_value_t<R>;
                 constexpr static std::size_t value_size = sizeof(range_value_t);
                 const std::size_t            range_size = std::ranges::size(range) * value_size;
+
+                auto tempBuffer = createHostBuffer(device, std::forward<R &&>(range), true);
 
                 auto [buffer, _] = device->createBuffer(
                     range_size, vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst,

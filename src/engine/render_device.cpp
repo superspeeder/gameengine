@@ -47,8 +47,7 @@ namespace engine {
     }
 
     RenderDevice::RenderDevice() {
-        VmaAllocatorCreateFlags allocatorFlags =
-            VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT | VMA_ALLOCATOR_CREATE_KHR_MAINTENANCE4_BIT | VMA_ALLOCATOR_CREATE_KHR_MAINTENANCE5_BIT;
+        VmaAllocatorCreateFlags allocatorFlags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT | VMA_ALLOCATOR_CREATE_KHR_MAINTENANCE4_BIT | VMA_ALLOCATOR_CREATE_KHR_MAINTENANCE5_BIT;
 
         {
             VULKAN_HPP_DEFAULT_DISPATCHER.init();
@@ -124,9 +123,10 @@ namespace engine {
             v13f.synchronization2   = true;
             v13f.dynamicRendering   = true;
             v13f.inlineUniformBlock = true;
+            v13f.maintenance4 = true;
 
             vk::PhysicalDeviceVulkan14Features v14f{};
-            v14f.pushDescriptor = true;
+            v14f.maintenance5 = true;
 
             vk::PhysicalDeviceShaderObjectFeaturesEXT sof{};
             sof.shaderObject = true;
@@ -137,8 +137,7 @@ namespace engine {
             v13f.pNext = &v14f;
             v14f.pNext = &sof;
 
-            v13f.maintenance4 = true;
-            v14f.maintenance5 = true;
+
 
             std::array<float, 1>                   queuePriorities = {1.0f};
             std::vector<vk::DeviceQueueCreateInfo> qcis{};
@@ -300,11 +299,13 @@ namespace engine {
         return createImage(ici, aci);
     }
 
-    void RenderDevice::copyBufferToBuffer(const RawBuffer &srcBuffer, const RawBuffer &dstBuffer, const vk::DeviceSize srcOffset, const vk::DeviceSize dstOffset, vk::DeviceSize size) const {
+    void RenderDevice::copyBufferToBuffer(
+        const RawBuffer &srcBuffer, const RawBuffer &dstBuffer, const vk::DeviceSize srcOffset, const vk::DeviceSize dstOffset, vk::DeviceSize size
+    ) const {
         auto fence = createFence();
-        singleTimeCommands<QueueType::TRANSFER>([&](const vk::raii::CommandBuffer &cmd) {
-            cmd.copyBuffer(*srcBuffer.buffer, *dstBuffer.buffer, vk::BufferCopy(srcOffset, dstOffset, size));
-        }, fence);
+        singleTimeCommands<QueueType::TRANSFER>(
+            [&](const vk::raii::CommandBuffer &cmd) { cmd.copyBuffer(*srcBuffer.buffer, *dstBuffer.buffer, vk::BufferCopy(srcOffset, dstOffset, size)); }, fence
+        );
         waitFence(fence);
     }
 
