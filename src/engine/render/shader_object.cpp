@@ -103,6 +103,10 @@ namespace engine {
         throw std::invalid_argument("Failed to open file " + path.string());
     }
 
+    void Shader::bindTo(const vk::raii::CommandBuffer &cmd) const {
+        cmd.bindShadersEXT(m_Stage, *m_Shader);
+    }
+
     Shader::Shader(const std::shared_ptr<RenderDevice> &render_device, vk::raii::ShaderEXT shader, vk::ShaderStageFlagBits stage)
         : m_RenderDevice(render_device), m_Shader(std::move(shader)), m_Stage(stage) {}
 } // namespace engine

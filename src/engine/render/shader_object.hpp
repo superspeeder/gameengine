@@ -58,6 +58,8 @@ namespace engine {
 
         inline vk::ShaderStageFlagBits stage() const { return m_Stage; };
 
+        void bindTo(const vk::raii::CommandBuffer &cmd) const;
+
       private:
         std::shared_ptr<RenderDevice> m_RenderDevice;
         vk::raii::ShaderEXT           m_Shader;

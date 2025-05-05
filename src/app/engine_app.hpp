@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "engine/render/material.hpp"
 #include "engine/render/shader_object.hpp"
 #include "engine/render/vertex_buffer.hpp"
 #include "engine/render/window_renderer.hpp"
@@ -33,7 +34,7 @@ namespace app {
         std::shared_ptr<engine::RenderDevice>   m_RenderDevice;
         std::shared_ptr<engine::Swapchain>      m_Swapchain;
         std::shared_ptr<engine::WindowRenderer> m_WindowRenderer;
-        std::shared_ptr<engine::LinkedShader>   m_Shader;
+        std::shared_ptr<engine::MaterialShader> m_Shader;
         std::shared_ptr<engine::VertexBuffer>   m_VertexBuffer;
     };
 

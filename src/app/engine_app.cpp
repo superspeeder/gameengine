@@ -25,35 +25,56 @@ namespace app {
         m_Window         = std::make_shared<engine::Window>(m_RenderDevice);
         m_Swapchain      = std::make_shared<engine::Swapchain>(m_RenderDevice, m_Window);
         m_WindowRenderer = std::make_shared<engine::WindowRenderer>(m_RenderDevice, m_Swapchain);
-        m_Shader         = engine::Shader::create_linked(
+        // m_Shader         = engine::Shader::create_linked(
+        //     m_RenderDevice,
+        //     {
+        //         engine::ShaderInfo{
+        //                     .stage     = vk::ShaderStageFlagBits::eVertex,
+        //                     .nextStage = vk::ShaderStageFlagBits::eFragment,
+        //                     .name      = "main",
+        //                     .code      = engine::Shader::load_code("assets/shaders/main.vert.spv"),
+        //                     .sil       = {}
+        //         },
+        //         engine::ShaderInfo{
+        //                     .stage     = vk::ShaderStageFlagBits::eFragment,
+        //                     .nextStage = vk::ShaderStageFlags(),
+        //                     .name      = "main",
+        //                     .code      = engine::Shader::load_code("assets/shaders/main.frag.spv"),
+        //                     .sil       = {}
+        //         },
+        //     }
+        // );
+
+        m_Shader = engine::MaterialShader::create_shared(
             m_RenderDevice,
             {
-                engine::ShaderInfo{
-                            .stage     = vk::ShaderStageFlagBits::eVertex,
-                            .nextStage = vk::ShaderStageFlagBits::eFragment,
-                            .name      = "main",
-                            .code      = engine::Shader::load_code("assets/shaders/main.vert.spv"),
-                            .sil       = {}
+                engine::MaterialShaderStage{
+                    .path       = "assets/shaders/main.vert.spv",
+                    .stage      = vk::ShaderStageFlagBits::eVertex,
+                    .entryPoint = "main",
+                    .sil        = {},
                 },
-                engine::ShaderInfo{
-                            .stage     = vk::ShaderStageFlagBits::eFragment,
-                            .nextStage = vk::ShaderStageFlags(),
-                            .name      = "main",
-                            .code      = engine::Shader::load_code("assets/shaders/main.frag.spv"),
-                            .sil       = {}
+                engine::MaterialShaderStage{
+                    .path       = "assets/shaders/main.frag.spv",
+                    .stage      = vk::ShaderStageFlagBits::eFragment,
+                    .entryPoint = "main",
+                    .sil        = {},
                 },
             }
         );
 
         std::vector<Vertex> vertices = {
-            {{-0.5f, 0.5f}, {1.0f, 0.0f, 0.0f, 1.0f}},
-            {{0.0f, -0.5f}, {0.0f, 1.0f, 0.0f, 1.0f}},
-            {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f, 1.0f}},
+            {{-0.5f, 0.5f}, {1.0f, 1.0f, 0.0f, 1.0f}},
+            {{0.0f, -0.5f}, {0.0f, 1.0f, 1.0f, 1.0f}},
+            {{0.5f, 0.5f}, {1.0f, 0.0f, 1.0f, 1.0f}},
         };
 
-        m_VertexBuffer = engine::VertexBuffer::create(m_RenderDevice, engine::VertexBufferStorage::Static, vertices, {vk::VertexInputBindingDescription2EXT(0, sizeof(Vertex), vk::VertexInputRate::eVertex), {
-                vk::VertexInputAttributeDescription2EXT(0, 0, vk::Format::eR32G32Sfloat, offsetof(Vertex, position)),
-                vk::VertexInputAttributeDescription2EXT(1, 0, vk::Format::eR32G32B32A32Sfloat, offsetof(Vertex, color))}});
+        m_VertexBuffer = engine::VertexBuffer::create(
+            m_RenderDevice, engine::VertexBufferStorage::Static, vertices,
+            {vk::VertexInputBindingDescription2EXT(0, sizeof(Vertex), vk::VertexInputRate::eVertex),
+             {vk::VertexInputAttributeDescription2EXT(0, 0, vk::Format::eR32G32Sfloat, offsetof(Vertex, position)),
+              vk::VertexInputAttributeDescription2EXT(1, 0, vk::Format::eR32G32B32A32Sfloat, offsetof(Vertex, color))}}
+        );
     }
 
     EngineApp::~EngineApp() {
@@ -71,6 +92,8 @@ namespace app {
 
                 engine::Shader::bindNull(cmd);
                 m_Shader->bindTo(cmd);
+
+                m_VertexBuffer->bindAndSetState(cmd, 0);
 
                 cmd.draw(3, 1, 0, 0);
             });
